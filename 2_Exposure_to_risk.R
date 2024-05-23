@@ -1,353 +1,262 @@
-#######################################################
-# Empirical exposure to risk of each subnational region
-#######################################################
-
-## Population ratios: Area/Australia_Total (bottom level)
-
-# Row 1
-pop_ratio_A_F_to_T = c("pop_ratio_A1_F_to_T", "pop_ratio_A2_F_to_T", "pop_ratio_A3_F_to_T", 
-                       "pop_ratio_A4_F_to_T", "pop_ratio_A5_F_to_T", "pop_ratio_A6_F_to_T",
-                       "pop_ratio_A7_F_to_T", "pop_ratio_A8_F_to_T", "pop_ratio_A9_F_to_T",
-                       "pop_ratio_A10_F_to_T", "pop_ratio_A11_F_to_T", "pop_ratio_A12_F_to_T",
-                       "pop_ratio_A13_F_to_T", "pop_ratio_A14_F_to_T", "pop_ratio_A15_F_to_T",
-                       "pop_ratio_A16_F_to_T", "pop_ratio_A17_F_to_T", "pop_ratio_A18_F_to_T",
-                       "pop_ratio_A19_F_to_T", "pop_ratio_A20_F_to_T", "pop_ratio_A21_F_to_T",
-                       "pop_ratio_A22_F_to_T", "pop_ratio_A23_F_to_T", "pop_ratio_A24_F_to_T",
-                       "pop_ratio_A25_F_to_T", "pop_ratio_A26_F_to_T", "pop_ratio_A27_F_to_T",
-                       "pop_ratio_A28_F_to_T", "pop_ratio_A29_F_to_T", "pop_ratio_A30_F_to_T",
-                       "pop_ratio_A31_F_to_T", "pop_ratio_A32_F_to_T", "pop_ratio_A33_F_to_T",
-                       "pop_ratio_A34_F_to_T", "pop_ratio_A35_F_to_T", "pop_ratio_A36_F_to_T",
-                       "pop_ratio_A37_F_to_T", "pop_ratio_A38_F_to_T", "pop_ratio_A39_F_to_T",
-                       "pop_ratio_A40_F_to_T", "pop_ratio_A41_F_to_T", "pop_ratio_A42_F_to_T",
-                       "pop_ratio_A43_F_to_T", "pop_ratio_A44_F_to_T", "pop_ratio_A45_F_to_T",
-                       "pop_ratio_A46_F_to_T", "pop_ratio_A47_F_to_T")
-
-pop_ratio_A_M_to_T = c("pop_ratio_A1_M_to_T",  "pop_ratio_A2_M_to_T",  "pop_ratio_A3_M_to_T", 
-                       "pop_ratio_A4_M_to_T",  "pop_ratio_A5_M_to_T",  "pop_ratio_A6_M_to_T",
-                       "pop_ratio_A7_M_to_T",  "pop_ratio_A8_M_to_T",  "pop_ratio_A9_M_to_T",
-                       "pop_ratio_A10_M_to_T", "pop_ratio_A11_M_to_T", "pop_ratio_A12_M_to_T",
-                       "pop_ratio_A13_M_to_T", "pop_ratio_A14_M_to_T", "pop_ratio_A15_M_to_T",
-                       "pop_ratio_A16_M_to_T", "pop_ratio_A17_M_to_T", "pop_ratio_A18_M_to_T",
-                       "pop_ratio_A19_M_to_T", "pop_ratio_A20_M_to_T", "pop_ratio_A21_M_to_T",
-                       "pop_ratio_A22_M_to_T", "pop_ratio_A23_M_to_T", "pop_ratio_A24_M_to_T",
-                       "pop_ratio_A25_M_to_T", "pop_ratio_A26_M_to_T", "pop_ratio_A27_M_to_T",
-                       "pop_ratio_A28_M_to_T", "pop_ratio_A29_M_to_T", "pop_ratio_A30_M_to_T",
-                       "pop_ratio_A31_M_to_T", "pop_ratio_A32_M_to_T", "pop_ratio_A33_M_to_T",
-                       "pop_ratio_A34_M_to_T", "pop_ratio_A35_M_to_T", "pop_ratio_A36_M_to_T",
-                       "pop_ratio_A37_M_to_T", "pop_ratio_A38_M_to_T", "pop_ratio_A39_M_to_T",
-                       "pop_ratio_A40_M_to_T", "pop_ratio_A41_M_to_T", "pop_ratio_A42_M_to_T",
-                       "pop_ratio_A43_M_to_T", "pop_ratio_A44_M_to_T", "pop_ratio_A45_M_to_T",
-                       "pop_ratio_A46_M_to_T", "pop_ratio_A47_M_to_T")
+################################################
+# Forecast exposure to risk at the bottom-level 
+################################################
 
 
-for(iw in 2:48)
+###############
+# Fixing COB_j
+###############
+
+library(ftsa)
+
+# year_horizon: forecast horizon
+# top: exposure to risk for a given series at the area level
+# bottom: exposure to risk for AUS total series
+
+pop_fore_fix_COB <- function(top, bottom, year_horizon)
 {
-  assign(pop_ratio_A_F_to_T[iw-1], (get(Area[iw])$pop$female/Australia$pop$total)[,20:24])
-  assign(pop_ratio_A_M_to_T[iw-1], (get(Area[iw])$pop$male/Australia$pop$total)[,20:24])
+  pop_fore = array(0, dim = c(year_horizon, 7, year_horizon, 19))
+
+  for(COB in 1:19)
+  {
+    for(year in 22:31)
+    {
+      for(j in 1:7)
+      {
+        ratio = log(top[1:year,j,COB]/bottom[1:year,j,COB] + 1e-6)
+        
+        pop_fore[,j,year-21,COB] =  exp(forecast(auto.arima(ratio), h = year_horizon)$mean) - 1e-6
+      }
+    }
+  }
+
+  return(pop_fore)
+}  
+
+## Area/AUS
+pop_ratio_Area_to_AUS = c("pop_ratio_A1_to_AUS", "pop_ratio_A2_to_AUS", "pop_ratio_A3_to_AUS", 
+                          "pop_ratio_A4_to_AUS", "pop_ratio_A5_to_AUS", "pop_ratio_A6_to_AUS",
+                          "pop_ratio_A7_to_AUS", "pop_ratio_A8_to_AUS", "pop_ratio_A9_to_AUS", 
+                          "pop_ratio_A10_to_AUS", "pop_ratio_A11_to_AUS", "pop_ratio_A12_to_AUS", 
+                          "pop_ratio_A13_to_AUS", "pop_ratio_A14_to_AUS", "pop_ratio_A15_to_AUS",
+                          "pop_ratio_A16_to_AUS", "pop_ratio_A17_to_AUS", "pop_ratio_A18_to_AUS", 
+                          "pop_ratio_A19_to_AUS", "pop_ratio_A20_to_AUS", "pop_ratio_A21_to_AUS", 
+                          "pop_ratio_A22_to_AUS", "pop_ratio_A23_to_AUS", "pop_ratio_A24_to_AUS",
+                          "pop_ratio_A25_to_AUS", "pop_ratio_A26_to_AUS", "pop_ratio_A27_to_AUS", 
+                          "pop_ratio_A28_to_AUS", "pop_ratio_A29_to_AUS", "pop_ratio_A30_to_AUS", 
+                          "pop_ratio_A31_to_AUS", "pop_ratio_A32_to_AUS", "pop_ratio_A33_to_AUS",
+                          "pop_ratio_A34_to_AUS", "pop_ratio_A35_to_AUS", "pop_ratio_A36_to_AUS", 
+                          "pop_ratio_A37_to_AUS", "pop_ratio_A38_to_AUS", "pop_ratio_A39_to_AUS", 
+                          "pop_ratio_A40_to_AUS", "pop_ratio_A41_to_AUS", "pop_ratio_A42_to_AUS",
+                          "pop_ratio_A43_to_AUS", "pop_ratio_A44_to_AUS", "pop_ratio_A45_to_AUS", 
+                          "pop_ratio_A46_to_AUS", "pop_ratio_A47_to_AUS")
+
+
+for(iw in 1:47)
+{
+  assign(pop_ratio_Area_to_AUS[iw], pop_fore_fix_COB(top = pop_interp_area[[iw]], bottom = pop_interp_national, year_horizon = 10))
+  print(iw)
 }
 
-# Row 2
-
-pop_ratio_A_F_to_F = c("pop_ratio_A1_F_to_F", "pop_ratio_A2_F_to_F", "pop_ratio_A3_F_to_F", 
-                       "pop_ratio_A4_F_to_F", "pop_ratio_A5_F_to_F", "pop_ratio_A6_F_to_F",
-                       "pop_ratio_A7_F_to_F", "pop_ratio_A8_F_to_F", "pop_ratio_A9_F_to_F",
-                       "pop_ratio_A10_F_to_F", "pop_ratio_A11_F_to_F", "pop_ratio_A12_F_to_F",
-                       "pop_ratio_A13_F_to_F", "pop_ratio_A14_F_to_F", "pop_ratio_A15_F_to_F",
-                       "pop_ratio_A16_F_to_F", "pop_ratio_A17_F_to_F", "pop_ratio_A18_F_to_F",
-                       "pop_ratio_A19_F_to_F", "pop_ratio_A20_F_to_F", "pop_ratio_A21_F_to_F",
-                       "pop_ratio_A22_F_to_F", "pop_ratio_A23_F_to_F", "pop_ratio_A24_F_to_F",
-                       "pop_ratio_A25_F_to_F", "pop_ratio_A26_F_to_F", "pop_ratio_A27_F_to_F",
-                       "pop_ratio_A28_F_to_F", "pop_ratio_A29_F_to_F", "pop_ratio_A30_F_to_F",
-                       "pop_ratio_A31_F_to_F", "pop_ratio_A32_F_to_F", "pop_ratio_A33_F_to_F",
-                       "pop_ratio_A34_F_to_F", "pop_ratio_A35_F_to_F", "pop_ratio_A36_F_to_F",
-                       "pop_ratio_A37_F_to_F", "pop_ratio_A38_F_to_F", "pop_ratio_A39_F_to_F",
-                       "pop_ratio_A40_F_to_F", "pop_ratio_A41_F_to_F", "pop_ratio_A42_F_to_F",
-                       "pop_ratio_A43_F_to_F", "pop_ratio_A44_F_to_F", "pop_ratio_A45_F_to_F",
-                       "pop_ratio_A46_F_to_F", "pop_ratio_A47_F_to_F")
-
-# Row 3
-
-pop_ratio_A_M_to_M = c("pop_ratio_A1_M_to_M",  "pop_ratio_A2_M_to_M",  "pop_ratio_A3_M_to_M", 
-                       "pop_ratio_A4_M_to_M",  "pop_ratio_A5_M_to_M",  "pop_ratio_A6_M_to_M",
-                       "pop_ratio_A7_M_to_M",  "pop_ratio_A8_M_to_M",  "pop_ratio_A9_M_to_M",
-                       "pop_ratio_A10_M_to_M", "pop_ratio_A11_M_to_M", "pop_ratio_A12_M_to_M",
-                       "pop_ratio_A13_M_to_M", "pop_ratio_A14_M_to_M", "pop_ratio_A15_M_to_M",
-                       "pop_ratio_A16_M_to_M", "pop_ratio_A17_M_to_M", "pop_ratio_A18_M_to_M",
-                       "pop_ratio_A19_M_to_M", "pop_ratio_A20_M_to_M", "pop_ratio_A21_M_to_M",
-                       "pop_ratio_A22_M_to_M", "pop_ratio_A23_M_to_M", "pop_ratio_A24_M_to_M",
-                       "pop_ratio_A25_M_to_M", "pop_ratio_A26_M_to_M", "pop_ratio_A27_M_to_M",
-                       "pop_ratio_A28_M_to_M", "pop_ratio_A29_M_to_M", "pop_ratio_A30_M_to_M",
-                       "pop_ratio_A31_M_to_M", "pop_ratio_A32_M_to_M", "pop_ratio_A33_M_to_M",
-                       "pop_ratio_A34_M_to_M", "pop_ratio_A35_M_to_M", "pop_ratio_A36_M_to_M",
-                       "pop_ratio_A37_M_to_M", "pop_ratio_A38_M_to_M", "pop_ratio_A39_M_to_M",
-                       "pop_ratio_A40_M_to_M", "pop_ratio_A41_M_to_M", "pop_ratio_A42_M_to_M",
-                       "pop_ratio_A43_M_to_M", "pop_ratio_A44_M_to_M", "pop_ratio_A45_M_to_M",
-                       "pop_ratio_A46_M_to_M", "pop_ratio_A47_M_to_M")
-
-for(iw in 2:48)
+for(iw in 1:47)
 {
-  assign(pop_ratio_A_F_to_F[iw-1], (get(Area[iw])$pop$female/Australia$pop$female)[,20:24])
-  assign(pop_ratio_A_M_to_M[iw-1], (get(Area[iw])$pop$male/Australia$pop$male)[,20:24])
+  print(sum(is.na(get(pop_ratio_Area_to_AUS[iw]))))
 }
 
-## Population ratios: Region/Australia_Total (middle row)
+for(iw in 1:47)
+{
+  print(sum(get(pop_ratio_Area_to_AUS[iw])<0))
+}
 
-# Row 4
-
-pop_ratio_A_F_to_R1_T = "pop_ratio_A1_F_to_R1_T"
-pop_ratio_A_F_to_R2_T = c("pop_ratio_A2_F_to_R2_T", "pop_ratio_A3_F_to_R2_T", "pop_ratio_A4_F_to_R2_T")
-pop_ratio_A_F_to_R3_T = "pop_ratio_A5_F_to_R3_T"
-pop_ratio_A_F_to_R4_T = c("pop_ratio_A6_F_to_R4_T", "pop_ratio_A7_F_to_R4_T", "pop_ratio_A8_F_to_R4_T",
-                          "pop_ratio_A9_F_to_R4_T", "pop_ratio_A10_F_to_R4_T")
-pop_ratio_A_F_to_R5_T = "pop_ratio_A11_F_to_R5_T"
-pop_ratio_A_F_to_R6_T = "pop_ratio_A12_F_to_R6_T"
-pop_ratio_A_F_to_R7_T = "pop_ratio_A13_F_to_R7_T"
-pop_ratio_A_F_to_R8_T = "pop_ratio_A14_F_to_R8_T"
-pop_ratio_A_F_to_R9_T = "pop_ratio_A15_F_to_R9_T"
-pop_ratio_A_F_to_R10_T = c("pop_ratio_A16_F_to_R10_T", "pop_ratio_A17_F_to_R10_T", "pop_ratio_A18_F_to_R10_T", 
-                           "pop_ratio_A19_F_to_R10_T", "pop_ratio_A20_F_to_R10_T", "pop_ratio_A21_F_to_R10_T", 
-                           "pop_ratio_A22_F_to_R10_T", "pop_ratio_A23_F_to_R10_T", "pop_ratio_A24_F_to_R10_T", 
-                           "pop_ratio_A25_F_to_R10_T", "pop_ratio_A26_F_to_R10_T", "pop_ratio_A27_F_to_R10_T", 
-                           "pop_ratio_A28_F_to_R10_T", "pop_ratio_A29_F_to_R10_T", "pop_ratio_A30_F_to_R10_T", 
-                           "pop_ratio_A31_F_to_R10_T", "pop_ratio_A32_F_to_R10_T", "pop_ratio_A33_F_to_R10_T", 
-                           "pop_ratio_A34_F_to_R10_T")
-pop_ratio_A_F_to_R11_T = c("pop_ratio_A35_F_to_R11_T", "pop_ratio_A36_F_to_R11_T", "pop_ratio_A37_F_to_R11_T", 
-                           "pop_ratio_A38_F_to_R11_T", "pop_ratio_A39_F_to_R11_T", "pop_ratio_A40_F_to_R11_T", 
-                           "pop_ratio_A41_F_to_R11_T", "pop_ratio_A42_F_to_R11_T", "pop_ratio_A43_F_to_R11_T", 
-                           "pop_ratio_A44_F_to_R11_T", "pop_ratio_A45_F_to_R11_T", "pop_ratio_A46_F_to_R11_T", 
-                           "pop_ratio_A47_F_to_R11_T")
+for(iw in 1:47)
+{
+  temp = get(pop_ratio_Area_to_AUS[iw])
+  temp[get(pop_ratio_Area_to_AUS[iw])<=0] = 0
+  assign(pop_ratio_Area_to_AUS[iw], temp)
+  rm(temp)
+}
 
 
-assign(pop_ratio_A_F_to_R1_T, (get(Area[2])$pop$female/R01$pop$total)[,20:24])
+## Area/Region
+pop_ratio_Area_to_R1 = "pop_ratio_A1_to_R1"
+pop_ratio_Area_to_R2 = c("pop_ratio_A2_to_R2", "pop_ratio_A3_to_R2", "pop_ratio_A4_to_R2")
+pop_ratio_Area_to_R3 = "pop_ratio_A10_to_R3"
+pop_ratio_Area_to_R4 = c("pop_ratio_A11_to_R4", "pop_ratio_A12_to_R5", "pop_ratio_A13_to_R5", "pop_ratio_A16_to_R4", "pop_ratio_A18_to_R4")
+pop_ratio_Area_to_R5 = "pop_ratio_A19_to_R5"
+pop_ratio_Area_to_R6 = "pop_ratio_A27_to_R6"
+pop_ratio_Area_to_R7 = "pop_ratio_A33_to_R7"
+pop_ratio_Area_to_R8 = "pop_ratio_A42_to_R8"
+pop_ratio_Area_to_R9 = "pop_ratio_A47_to_R9"
+pop_ratio_Area_to_R10 = c("pop_ratio_A5_to_R10", "pop_ratio_A6_to_R10", "pop_ratio_A7_to_R10", "pop_ratio_A8_to_R10", "pop_ratio_A14_to_R10", "pop_ratio_A15_to_R10", "pop_ratio_A17_to_R10", "pop_ratio_A20_to_R10", "pop_ratio_A21_to_R10", "pop_ratio_A24_to_R10", "pop_ratio_A28_to_R10", "pop_ratio_A29_to_R10", "pop_ratio_A30_to_R10", "pop_ratio_A34_to_R10", "pop_ratio_A35_to_R10", "pop_ratio_A36_to_R10", "pop_ratio_A37_to_R10", "pop_ratio_A43_to_R10", "pop_ratio_A45_to_R10")
+pop_ratio_Area_to_R11 = c("pop_ratio_A9_to_R11", "pop_ratio_A22_to_R11", "pop_ratio_A23_to_R11", "pop_ratio_A25_to_R11", "pop_ratio_A26_to_R11", "pop_ratio_A31_to_R11", "pop_ratio_A32_to_R11", "pop_ratio_A38_to_R11", "pop_ratio_A39_to_R11", "pop_ratio_A40_to_R11", "pop_ratio_A41_to_R11", "pop_ratio_A44_to_R11", "pop_ratio_A46_to_R11")
+
+pop_ratio_Area_to_Region = c(pop_ratio_Area_to_R1, pop_ratio_Area_to_R2, pop_ratio_Area_to_R3,
+                             pop_ratio_Area_to_R4, pop_ratio_Area_to_R5, pop_ratio_Area_to_R6,
+                             pop_ratio_Area_to_R7, pop_ratio_Area_to_R8, pop_ratio_Area_to_R9,
+                             pop_ratio_Area_to_R10, pop_ratio_Area_to_R11)
+
+# R1
+assign(pop_ratio_Area_to_R1, pop_fore_fix_COB(top = pop_interp_area[[1]], bottom = pop_interp_region[[1]], year_horizon = 10))
+# R2
 for(iw in 2:4)
 {
-  assign(pop_ratio_A_F_to_R2_T[iw-1], (get(Area[(iw+1)])$pop$female/R02$pop$total)[,20:24])
-}         
-assign(pop_ratio_A_F_to_R3_T, (get(Area[6])$pop$female/R03$pop$total)[,20:24])
-for(iw in 6:10)
-{
-  assign(pop_ratio_A_F_to_R4_T[iw-5], (get(Area[(iw+1)])$pop$female/R04$pop$total)[,20:24])
+  assign(pop_ratio_Area_to_R2[[iw-1]], pop_fore_fix_COB(top = pop_interp_area[[iw]], bottom = pop_interp_region[[2]], year_horizon = 10))
 }
-assign(pop_ratio_A_F_to_R5_T, (get(Area[12])$pop$female/R05$pop$total)[,20:24])
-assign(pop_ratio_A_F_to_R6_T, (get(Area[13])$pop$female/R06$pop$total)[,20:24])
-assign(pop_ratio_A_F_to_R7_T, (get(Area[14])$pop$female/R07$pop$total)[,20:24])
-assign(pop_ratio_A_F_to_R8_T, (get(Area[15])$pop$female/R08$pop$total)[,20:24])
-assign(pop_ratio_A_F_to_R9_T, (get(Area[16])$pop$female/R09$pop$total)[,20:24])
-for(iw in 16:34)
+# R3
+assign(pop_ratio_Area_to_R3, pop_fore_fix_COB(top = pop_interp_area[[10]], bottom = pop_interp_region[[3]], year_horizon = 10))
+# R4
+for(iw in 1:5)
 {
-  assign(pop_ratio_A_F_to_R10_T[iw-15], (get(Area[(iw+1)])$pop$female/R10$pop$total)[,20:24])
+  j = region_list_ind[[4]][iw]
+  assign(pop_ratio_Area_to_R4[[iw]], pop_fore_fix_COB(top = pop_interp_area[[j]], bottom = pop_interp_region[[4]], year_horizon = 10))
 }
-for(iw in 35:47)
+# R5
+assign(pop_ratio_Area_to_R5, pop_fore_fix_COB(top = pop_interp_area[[19]], bottom = pop_interp_region[[5]], year_horizon = 10))
+# R6
+assign(pop_ratio_Area_to_R6, pop_fore_fix_COB(top = pop_interp_area[[27]], bottom = pop_interp_region[[6]], year_horizon = 10))
+# R7
+assign(pop_ratio_Area_to_R7, pop_fore_fix_COB(top = pop_interp_area[[33]], bottom = pop_interp_region[[7]], year_horizon = 10))
+# R8
+assign(pop_ratio_Area_to_R8, pop_fore_fix_COB(top = pop_interp_area[[42]], bottom = pop_interp_region[[8]], year_horizon = 10))
+# R9
+assign(pop_ratio_Area_to_R9, pop_fore_fix_COB(top = pop_interp_area[[47]], bottom = pop_interp_region[[9]], year_horizon = 10))
+# R10
+for(iw in 1:19)
 {
-  assign(pop_ratio_A_F_to_R11_T[iw-34], (get(Area[(iw+1)])$pop$female/R11$pop$total)[,20:24])
+  j = region_list_ind[[10]][iw]
+  assign(pop_ratio_Area_to_R10[[iw]], pop_fore_fix_COB(top = pop_interp_area[[j]], bottom = pop_interp_region[[10]], year_horizon = 10))
 }
-
-
-pop_ratio_A_M_to_R1_T = "pop_ratio_A1_M_to_R1_T"
-pop_ratio_A_M_to_R2_T = c("pop_ratio_A2_M_to_R2_T", "pop_ratio_A3_M_to_R2_T", "pop_ratio_A4_M_to_R2_T")
-pop_ratio_A_M_to_R3_T = "pop_ratio_A5_M_to_R3_T"
-pop_ratio_A_M_to_R4_T = c("pop_ratio_A6_M_to_R4_T", "pop_ratio_A7_M_to_R4_T", "pop_ratio_A8_M_to_R4_T",
-                          "pop_ratio_A9_M_to_R4_T", "pop_ratio_A10_M_to_R4_T")
-pop_ratio_A_M_to_R5_T = "pop_ratio_A11_M_to_R5_T"
-pop_ratio_A_M_to_R6_T = "pop_ratio_A12_M_to_R6_T"
-pop_ratio_A_M_to_R7_T = "pop_ratio_A13_M_to_R7_T"
-pop_ratio_A_M_to_R8_T = "pop_ratio_A14_M_to_R8_T"
-pop_ratio_A_M_to_R9_T = "pop_ratio_A15_M_to_R9_T"
-pop_ratio_A_M_to_R10_T = c("pop_ratio_A16_M_to_R10_T", "pop_ratio_A17_M_to_R10_T", "pop_ratio_A18_M_to_R10_T", 
-                           "pop_ratio_A19_M_to_R10_T", "pop_ratio_A20_M_to_R10_T", "pop_ratio_A21_M_to_R10_T", 
-                           "pop_ratio_A22_M_to_R10_T", "pop_ratio_A23_M_to_R10_T", "pop_ratio_A24_M_to_R10_T", 
-                           "pop_ratio_A25_M_to_R10_T", "pop_ratio_A26_M_to_R10_T", "pop_ratio_A27_M_to_R10_T", 
-                           "pop_ratio_A28_M_to_R10_T", "pop_ratio_A29_M_to_R10_T", "pop_ratio_A30_M_to_R10_T", 
-                           "pop_ratio_A31_M_to_R10_T", "pop_ratio_A32_M_to_R10_T", "pop_ratio_A33_M_to_R10_T", 
-                           "pop_ratio_A34_M_to_R10_T")
-pop_ratio_A_M_to_R11_T = c("pop_ratio_A35_M_to_R11_T", "pop_ratio_A36_M_to_R11_T", "pop_ratio_A37_M_to_R11_T", 
-                           "pop_ratio_A38_M_to_R11_T", "pop_ratio_A39_M_to_R11_T", "pop_ratio_A40_M_to_R11_T", 
-                           "pop_ratio_A41_M_to_R11_T", "pop_ratio_A42_M_to_R11_T", "pop_ratio_A43_M_to_R11_T", 
-                           "pop_ratio_A44_M_to_R11_T", "pop_ratio_A45_M_to_R11_T", "pop_ratio_A46_M_to_R11_T", 
-                           "pop_ratio_A47_M_to_R11_T")
-
-
-assign(pop_ratio_A_M_to_R1_T, (get(Area[2])$pop$male/R01$pop$total)[,20:24])
-for(iw in 2:4)
+# R11
+for(iw in 1:13)
 {
-  assign(pop_ratio_A_M_to_R2_T[iw-1], (get(Area[(iw+1)])$pop$male/R02$pop$total)[,20:24])
-}         
-assign(pop_ratio_A_M_to_R3_T, (get(Area[6])$pop$male/R03$pop$total)[,20:24])
-for(iw in 6:10)
-{
-  assign(pop_ratio_A_M_to_R4_T[iw-5], (get(Area[(iw+1)])$pop$male/R04$pop$total)[,20:24])
-}
-assign(pop_ratio_A_M_to_R5_T, (get(Area[12])$pop$male/R05$pop$total)[,20:24])
-assign(pop_ratio_A_M_to_R6_T, (get(Area[13])$pop$male/R06$pop$total)[,20:24])
-assign(pop_ratio_A_M_to_R7_T, (get(Area[14])$pop$male/R07$pop$total)[,20:24])
-assign(pop_ratio_A_M_to_R8_T, (get(Area[15])$pop$male/R08$pop$total)[,20:24])
-assign(pop_ratio_A_M_to_R9_T, (get(Area[16])$pop$male/R09$pop$total)[,20:24])
-for(iw in 16:34)
-{
-  assign(pop_ratio_A_M_to_R10_T[iw-15], (get(Area[(iw+1)])$pop$male/R10$pop$total)[,20:24])
-}
-for(iw in 35:47)
-{
-  assign(pop_ratio_A_M_to_R11_T[iw-34], (get(Area[(iw+1)])$pop$male/R11$pop$total)[,20:24])
+  j = region_list_ind[[11]][iw]
+  assign(pop_ratio_Area_to_R11[[iw]], pop_fore_fix_COB(top = pop_interp_area[[j]], bottom = pop_interp_region[[11]], year_horizon = 10))
 }
 
-# Row 5
-
-pop_ratio_A_F_to_R1_F = "pop_ratio_A1_F_to_R1_F"
-pop_ratio_A_F_to_R2_F = c("pop_ratio_A2_F_to_R2_F", "pop_ratio_A3_F_to_R2_F", "pop_ratio_A4_F_to_R2_F")
-pop_ratio_A_F_to_R3_F = "pop_ratio_A5_F_to_R3_F"
-pop_ratio_A_F_to_R4_F = c("pop_ratio_A6_F_to_R4_F", "pop_ratio_A7_F_to_R4_F", "pop_ratio_A8_F_to_R4_F",
-                          "pop_ratio_A9_F_to_R4_F", "pop_ratio_A10_F_to_R4_F")
-pop_ratio_A_F_to_R5_F = "pop_ratio_A11_F_to_R5_F"
-pop_ratio_A_F_to_R6_F = "pop_ratio_A12_F_to_R6_F"
-pop_ratio_A_F_to_R7_F = "pop_ratio_A13_F_to_R7_F"
-pop_ratio_A_F_to_R8_F = "pop_ratio_A14_F_to_R8_F"
-pop_ratio_A_F_to_R9_F = "pop_ratio_A15_F_to_R9_F"
-pop_ratio_A_F_to_R10_F = c("pop_ratio_A16_F_to_R10_F", "pop_ratio_A17_F_to_R10_F", "pop_ratio_A18_F_to_R10_F", 
-                           "pop_ratio_A19_F_to_R10_F", "pop_ratio_A20_F_to_R10_F", "pop_ratio_A21_F_to_R10_F", 
-                           "pop_ratio_A22_F_to_R10_F", "pop_ratio_A23_F_to_R10_F", "pop_ratio_A24_F_to_R10_F", 
-                           "pop_ratio_A25_F_to_R10_F", "pop_ratio_A26_F_to_R10_F", "pop_ratio_A27_F_to_R10_F", 
-                           "pop_ratio_A28_F_to_R10_F", "pop_ratio_A29_F_to_R10_F", "pop_ratio_A30_F_to_R10_F", 
-                           "pop_ratio_A31_F_to_R10_F", "pop_ratio_A32_F_to_R10_F", "pop_ratio_A33_F_to_R10_F", 
-                           "pop_ratio_A34_F_to_R10_F")
-pop_ratio_A_F_to_R11_F = c("pop_ratio_A35_F_to_R11_F", "pop_ratio_A36_F_to_R11_F", "pop_ratio_A37_F_to_R11_F", 
-                           "pop_ratio_A38_F_to_R11_F", "pop_ratio_A39_F_to_R11_F", "pop_ratio_A40_F_to_R11_F", 
-                           "pop_ratio_A41_F_to_R11_F", "pop_ratio_A42_F_to_R11_F", "pop_ratio_A43_F_to_R11_F", 
-                           "pop_ratio_A44_F_to_R11_F", "pop_ratio_A45_F_to_R11_F", "pop_ratio_A46_F_to_R11_F", 
-                           "pop_ratio_A47_F_to_R11_F")
-
-
-assign(pop_ratio_A_F_to_R1_F, (get(Area[2])$pop$female/R01$pop$female)[,20:24])
-for(iw in 2:4)
+for(iw in 1:length(pop_ratio_Area_to_Region))
 {
-  assign(pop_ratio_A_F_to_R2_F[iw-1], (get(Area[(iw+1)])$pop$female/R02$pop$female)[,20:24])
-}         
-assign(pop_ratio_A_F_to_R3_F, (get(Area[6])$pop$female/R03$pop$female)[,20:24])
-for(iw in 6:10)
-{
-  assign(pop_ratio_A_F_to_R4_F[iw-5], (get(Area[(iw+1)])$pop$female/R04$pop$female)[,20:24])
-}
-assign(pop_ratio_A_F_to_R5_F, (get(Area[12])$pop$female/R05$pop$female)[,20:24])
-assign(pop_ratio_A_F_to_R6_F, (get(Area[13])$pop$female/R06$pop$female)[,20:24])
-assign(pop_ratio_A_F_to_R7_F, (get(Area[14])$pop$female/R07$pop$female)[,20:24])
-assign(pop_ratio_A_F_to_R8_F, (get(Area[15])$pop$female/R08$pop$female)[,20:24])
-assign(pop_ratio_A_F_to_R9_F, (get(Area[16])$pop$female/R09$pop$female)[,20:24])
-for(iw in 16:34)
-{
-  assign(pop_ratio_A_F_to_R10_F[iw-15], (get(Area[(iw+1)])$pop$female/R10$pop$female)[,20:24])
-}
-for(iw in 35:47)
-{
-  assign(pop_ratio_A_F_to_R11_F[iw-34], (get(Area[(iw+1)])$pop$female/R11$pop$female)[,20:24])
+  print(sum(get(pop_ratio_Area_to_Region[iw])<0))
 }
 
-# Row 6
-
-pop_ratio_A_M_to_R1_M = "pop_ratio_A1_M_to_R1_M"
-pop_ratio_A_M_to_R2_M = c("pop_ratio_A2_M_to_R2_M", "pop_ratio_A3_M_to_R2_M", "pop_ratio_A4_M_to_R2_M")
-pop_ratio_A_M_to_R3_M = "pop_ratio_A5_M_to_R3_M"
-pop_ratio_A_M_to_R4_M = c("pop_ratio_A6_M_to_R4_M", "pop_ratio_A7_M_to_R4_M", "pop_ratio_A8_M_to_R4_M",
-                          "pop_ratio_A9_M_to_R4_M", "pop_ratio_A10_M_to_R4_M")
-pop_ratio_A_M_to_R5_M = "pop_ratio_A11_M_to_R5_M"
-pop_ratio_A_M_to_R6_M = "pop_ratio_A12_M_to_R6_M"
-pop_ratio_A_M_to_R7_M = "pop_ratio_A13_M_to_R7_M"
-pop_ratio_A_M_to_R8_M = "pop_ratio_A14_M_to_R8_M"
-pop_ratio_A_M_to_R9_M = "pop_ratio_A15_M_to_R9_M"
-pop_ratio_A_M_to_R10_M = c("pop_ratio_A16_M_to_R10_M", "pop_ratio_A17_M_to_R10_M", "pop_ratio_A18_M_to_R10_M", 
-                           "pop_ratio_A19_M_to_R10_M", "pop_ratio_A20_M_to_R10_M", "pop_ratio_A21_M_to_R10_M", 
-                           "pop_ratio_A22_M_to_R10_M", "pop_ratio_A23_M_to_R10_M", "pop_ratio_A24_M_to_R10_M", 
-                           "pop_ratio_A25_M_to_R10_M", "pop_ratio_A26_M_to_R10_M", "pop_ratio_A27_M_to_R10_M", 
-                           "pop_ratio_A28_M_to_R10_M", "pop_ratio_A29_M_to_R10_M", "pop_ratio_A30_M_to_R10_M", 
-                           "pop_ratio_A31_M_to_R10_M", "pop_ratio_A32_M_to_R10_M", "pop_ratio_A33_M_to_R10_M", 
-                           "pop_ratio_A34_M_to_R10_M")
-pop_ratio_A_M_to_R11_M = c("pop_ratio_A35_M_to_R11_M", "pop_ratio_A36_M_to_R11_M", "pop_ratio_A37_M_to_R11_M", 
-                           "pop_ratio_A38_M_to_R11_M", "pop_ratio_A39_M_to_R11_M", "pop_ratio_A40_M_to_R11_M", 
-                           "pop_ratio_A41_M_to_R11_M", "pop_ratio_A42_M_to_R11_M", "pop_ratio_A43_M_to_R11_M", 
-                           "pop_ratio_A44_M_to_R11_M", "pop_ratio_A45_M_to_R11_M", "pop_ratio_A46_M_to_R11_M", 
-                           "pop_ratio_A47_M_to_R11_M")
-
-
-assign(pop_ratio_A_M_to_R1_M, (get(Area[2])$pop$male/R01$pop$male)[,20:24])
-for(iw in 2:4)
+for(iw in 1:47)
 {
-  assign(pop_ratio_A_M_to_R2_M[iw-1], (get(Area[(iw+1)])$pop$male/R02$pop$male)[,20:24])
-}         
-assign(pop_ratio_A_M_to_R3_M, (get(Area[6])$pop$male/R03$pop$male)[,20:24])
-for(iw in 6:10)
-{
-  assign(pop_ratio_A_M_to_R4_M[iw-5], (get(Area[(iw+1)])$pop$male/R04$pop$male)[,20:24])
-}
-assign(pop_ratio_A_M_to_R5_M, (get(Area[12])$pop$male/R05$pop$male)[,20:24])
-assign(pop_ratio_A_M_to_R6_M, (get(Area[13])$pop$male/R06$pop$male)[,20:24])
-assign(pop_ratio_A_M_to_R7_M, (get(Area[14])$pop$male/R07$pop$male)[,20:24])
-assign(pop_ratio_A_M_to_R8_M, (get(Area[15])$pop$male/R08$pop$male)[,20:24])
-assign(pop_ratio_A_M_to_R9_M, (get(Area[16])$pop$male/R09$pop$male)[,20:24])
-for(iw in 16:34)
-{
-  assign(pop_ratio_A_M_to_R10_M[iw-15], (get(Area[(iw+1)])$pop$male/R10$pop$male)[,20:24])
-}
-for(iw in 35:47)
-{
-  assign(pop_ratio_A_M_to_R11_M[iw-34], (get(Area[(iw+1)])$pop$male/R11$pop$male)[,20:24])
-}
-
-## Population ratios: Area/Area_total (top level)
-
-# Row 7
-
-pop_ratio_A_F_to_A_T = c("pop_ratio_A1_F_to_A1_T", "pop_ratio_A2_F_to_A2_T", "pop_ratio_A3_F_to_A3_T",
-                         "pop_ratio_A4_F_to_A4_T", "pop_ratio_A5_F_to_A5_T", "pop_ratio_A6_F_to_A6_T",
-                         "pop_ratio_A7_F_to_A7_T", "pop_ratio_A8_F_to_A8_T", "pop_ratio_A9_F_to_A9_T",
-                         "pop_ratio_A10_F_to_A10_T", "pop_ratio_A11_F_to_A11_T", "pop_ratio_A12_F_to_A12_T",
-                         "pop_ratio_A13_F_to_A13_T", "pop_ratio_A14_F_to_A14_T",
-                         "pop_ratio_A15_F_to_A15_T", "pop_ratio_A16_F_to_A16_T", "pop_ratio_A17_F_to_A17_T",
-                         "pop_ratio_A18_F_to_A18_T", "pop_ratio_A19_F_to_A19_T", "pop_ratio_A20_F_to_A20_T",
-                         "pop_ratio_A21_F_to_A21_T", "pop_ratio_A22_F_to_A22_T", "pop_ratio_A23_F_to_A23_T",
-                         "pop_ratio_A24_F_to_A24_T", "pop_ratio_A25_F_to_A25_T", "pop_ratio_A26_F_to_A26_T",
-                         "pop_ratio_A27_F_to_A27_T", "pop_ratio_A28_F_to_A28_T", "pop_ratio_A29_F_to_A29_T",
-                         "pop_ratio_A30_F_to_A30_T", "pop_ratio_A31_F_to_A31_T", "pop_ratio_A32_F_to_A32_T",
-                         "pop_ratio_A33_F_to_A33_T", "pop_ratio_A34_F_to_A34_T", "pop_ratio_A35_F_to_A35_T",
-                         "pop_ratio_A36_F_to_A36_T", "pop_ratio_A37_F_to_A37_T", "pop_ratio_A38_F_to_A38_T",
-                         "pop_ratio_A39_F_to_A39_T", "pop_ratio_A40_F_to_A40_T", "pop_ratio_A41_F_to_A41_T",
-                         "pop_ratio_A42_F_to_A42_T", "pop_ratio_A43_F_to_A43_T", "pop_ratio_A44_F_to_A44_T",
-                         "pop_ratio_A45_F_to_A45_T", "pop_ratio_A46_F_to_A46_T", "pop_ratio_A47_F_to_A47_T")
-
-pop_ratio_A_M_to_A_T = c("pop_ratio_A1_M_to_A1_T", "pop_ratio_A2_M_to_A2_T", "pop_ratio_A3_M_to_A3_T",
-                         "pop_ratio_A4_M_to_A4_T", "pop_ratio_A5_M_to_A5_T", "pop_ratio_A6_M_to_A6_T",
-                         "pop_ratio_A7_M_to_A7_T", "pop_ratio_A8_M_to_A8_T", "pop_ratio_A9_M_to_A9_T",
-                         "pop_ratio_A10_M_to_A10_T", "pop_ratio_A11_M_to_A11_T", "pop_ratio_A12_M_to_A12_T",
-                         "pop_ratio_A13_M_to_A13_T", "pop_ratio_A14_M_to_A14_T",
-                         "pop_ratio_A15_M_to_A15_T", "pop_ratio_A16_M_to_A16_T", "pop_ratio_A17_M_to_A17_T",
-                         "pop_ratio_A18_M_to_A18_T", "pop_ratio_A19_M_to_A19_T", "pop_ratio_A20_M_to_A20_T",
-                         "pop_ratio_A21_M_to_A21_T", "pop_ratio_A22_M_to_A22_T", "pop_ratio_A23_M_to_A23_T",
-                         "pop_ratio_A24_M_to_A24_T", "pop_ratio_A25_M_to_A25_T", "pop_ratio_A26_M_to_A26_T",
-                         "pop_ratio_A27_M_to_A27_T", "pop_ratio_A28_M_to_A28_T", "pop_ratio_A29_M_to_A29_T",
-                         "pop_ratio_A30_M_to_A30_T", "pop_ratio_A31_M_to_A31_T", "pop_ratio_A32_M_to_A32_T",
-                         "pop_ratio_A33_M_to_A33_T", "pop_ratio_A34_M_to_A34_T", "pop_ratio_A35_M_to_A35_T",
-                         "pop_ratio_A36_M_to_A36_T", "pop_ratio_A37_M_to_A37_T", "pop_ratio_A38_M_to_A38_T",
-                         "pop_ratio_A39_M_to_A39_T", "pop_ratio_A40_M_to_A40_T", "pop_ratio_A41_M_to_A41_T",
-                         "pop_ratio_A42_M_to_A42_T", "pop_ratio_A43_M_to_A43_T", "pop_ratio_A44_M_to_A44_T",
-                         "pop_ratio_A45_M_to_A45_T", "pop_ratio_A46_M_to_A46_T", "pop_ratio_A47_M_to_A47_T")
-
-for(iw in 2:48)
-{
-  assign(pop_ratio_A_F_to_A_T[iw-1], (get(Area[iw])$pop$female/get(Area[iw])$pop$total)[,20:24])
-  assign(pop_ratio_A_M_to_A_T[iw-1], (get(Area[iw])$pop$male/get(Area[iw])$pop$total)[,20:24])          
+  temp = get(pop_ratio_Area_to_Region[iw])
+  temp[get(pop_ratio_Area_to_Region[iw])<=0] = 0
+  assign(pop_ratio_Area_to_Region[iw], temp)
+  rm(temp)
 }
 
 
 
+###########################################
+# Fixing Area/Region (geographical factor)
+###########################################
+
+# year_horizon: forecast horizon
+# top: exposure to risk for a given COB series level
+# bottom: exposure to risk for COB group total series
+
+pop_fore_fix_geo <- function(top, bottom, year_horizon)
+{
+  pop_fore = array(0, dim = c(year_horizon, 7, year_horizon, 59))
+  
+  for(geo in 1:59)
+  {
+    for(year in 22:31)
+    {
+      for(j in 1:7)
+      {
+        ratio = log(top[1:year,j,geo]/bottom[1:year,j,geo] + 1e-6)
+        
+        pop_fore[,j,year-21,geo] =  exp(forecast(auto.arima(ratio), h = year_horizon)$mean) - 1e-6
+      }
+    }
+  }
+  
+  
+  return(pop_fore)
+}
+
+
+## COB/national
+pop_ratio_cob_to_national = c("pop_ratio_cob1_to_national", "pop_ratio_cob2_to_national", 
+                              "pop_ratio_cob3_to_national", "pop_ratio_cob4_to_national", 
+                              "pop_ratio_cob5_to_national", "pop_ratio_cob6_to_national", 
+                              "pop_ratio_cob7_to_national", "pop_ratio_cob8_to_national", 
+                              "pop_ratio_cob9_to_national", "pop_ratio_cob10_to_national",
+                              "pop_ratio_cob11_to_national", "pop_ratio_cob12_to_national", 
+                              "pop_ratio_cob13_to_national", "pop_ratio_cob14_to_national", 
+                              "pop_ratio_cob15_to_national", "pop_ratio_cob16_to_national", 
+                              "pop_ratio_cob17_to_national", "pop_ratio_cob18_to_national",
+                              "pop_ratio_cob19_to_national")
 
 
 
+for(iw in 1:19)
+{
+  assign(pop_ratio_cob_to_national[iw], pop_fore_fix_geo(top = get(paste("pop_interp_cob", iw, sep = "")), bottom = pop_interp_all_cob, year_horizon = 10))
+  print(iw)
+}
 
 
+## COB/C_group
+pop_ratio_cob_to_C1 = c("pop_ratio_cob1_to_C1", "pop_ratio_cob2_to_C1", "pop_ratio_cob3_to_C1")
+pop_ratio_cob_to_C2 = c("pop_ratio_cob4_to_C2", "pop_ratio_cob5_to_C2")
+pop_ratio_cob_to_C3 = "pop_ratio_cob6_to_C3"
+pop_ratio_cob_to_C4 = "pop_ratio_cob7_to_C4"
+pop_ratio_cob_to_C5 = c("pop_ratio_cob8_to_C5", "pop_ratio_cob9_to_C5", "pop_ratio_cob10_to_C5", "pop_ratio_cob11_to_C5", "pop_ratio_cob12_to_C5")
+pop_ratio_cob_to_C6 = c("pop_ratio_cob13_to_C6", "pop_ratio_cob14_to_C6")
+pop_ratio_cob_to_C7 = c("pop_ratio_cob15_to_C7", "pop_ratio_cob16_to_C7")
+pop_ratio_cob_to_C8 = "pop_ratio_cob17_to_C8"
+pop_ratio_cob_to_C9 = "pop_ratio_cob18_to_C9"
+pop_ratio_cob_to_C10 = "pop_ratio_cob19_to_C10"
 
+# C1
+for(iw in 1:3)
+{
+  j = COB_list[[1]][iw]
+  assign(pop_ratio_cob_to_C1[[iw]], pop_fore_fix_geo(top = get(paste("pop_interp_cob", j, sep="")), bottom = pop_interp_C1, year_horizon = 10))
+}
 
+# C2
+for(iw in 1:2)
+{
+  j = COB_list[[1]][iw]
+  assign(pop_ratio_cob_to_C2[[iw]], pop_fore_fix_geo(top = get(paste("pop_interp_cob", j, sep="")), bottom = pop_interp_C2, year_horizon = 10))
+}
 
+# C3
+assign(pop_ratio_cob_to_C3, pop_fore_fix_geo(top = pop_interp_cob6, bottom = pop_interp_C3, year_horizon = 10))
 
+# C4
+assign(pop_ratio_cob_to_C4, pop_fore_fix_geo(top = pop_interp_cob7, bottom = pop_interp_C4, year_horizon = 10))
 
+# C5
+for(iw in 1:5)
+{
+  j = COB_list[[5]][iw]
+  assign(pop_ratio_cob_to_C5[[iw]], pop_fore_fix_geo(top = get(paste("pop_interp_cob", j, sep="")), bottom = pop_interp_C5, year_horizon = 10))
+}
 
+# C6
+for(iw in 1:2)
+{
+  j = COB_list[[6]][iw]
+  assign(pop_ratio_cob_to_C6[[iw]], pop_fore_fix_geo(top = get(paste("pop_interp_cob", j, sep="")), bottom = pop_interp_C6, year_horizon = 10))
+}
 
+# C7
+for(iw in 1:2)
+{
+  j = COB_list[[7]][iw]
+  assign(pop_ratio_cob_to_C7[[iw]], pop_fore_fix_geo(top = get(paste("pop_interp_cob", j, sep="")), bottom = pop_interp_C7, year_horizon = 10))
+}
 
+# C8
+assign(pop_ratio_cob_to_C8, pop_fore_fix_geo(top = pop_interp_cob17, bottom = pop_interp_C8, year_horizon = 10))
 
+# C9
+assign(pop_ratio_cob_to_C9, pop_fore_fix_geo(top = pop_interp_cob18, bottom = pop_interp_C9, year_horizon = 10))
+
+# C10
+assign(pop_ratio_cob_to_C10, pop_fore_fix_geo(top = pop_interp_cob19, bottom = pop_interp_C10, year_horizon = 10))
